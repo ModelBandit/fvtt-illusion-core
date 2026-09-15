@@ -117,18 +117,25 @@
   text-align:left;
 }
 .fic-empty { opacity:.65; font-size:12px; }
-.fic-features { min-height:0; max-height:min(31vh,300px); overflow-y:auto; overflow-x:hidden; }
-.fic-root.has-features .fic-features { margin-top:7px; padding-top:7px; border-top:1px solid rgba(255,255,255,.12); }
-.fic-feature { min-width:0; }
+.fic-modules { min-height:0; max-height:min(31vh,300px); overflow-y:auto; overflow-x:hidden; }
+.fic-root.has-modules .fic-modules { margin-top:7px; padding-top:7px; border-top:1px solid rgba(255,255,255,.12); }
+.fic-module { min-width:0; }
+.fic-module + .fic-module { margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,.10); }
+.fic-module-header { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px; white-space:nowrap; }
+.fic-module-title { font-weight:700; }
+.fic-module-description { min-width:0; overflow:hidden; text-overflow:ellipsis; opacity:.65; font-size:11px; }
+.fic-module-controls { min-width:0; }
 
 @media (max-width: 980px) {
   .fic-root { width:calc(100vw - 82px); min-width:0; bottom:84px; }
 }
 @media (max-width: 620px) {
   .fic-player { max-width:none; flex:1 1 100%; }
+  .fic-module-header { align-items:flex-start; white-space:normal; }
+  .fic-module-description { white-space:normal; }
 }
 @media (max-height: 700px) {
   .fic-root { max-height:36vh; bottom:74px; }
   .fic-panel { max-height:36vh; }
-  .fic-features { max-height:22vh; }
+  .fic-modules { max-height:22vh; }
 }

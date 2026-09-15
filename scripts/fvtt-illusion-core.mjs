@@ -1,20 +1,22 @@
 const MODULE_ID = "fvtt-illusion-core";
 const ROOT_SELECTOR = "[data-fvtt-illusion-core-root]";
+const API_VERSION = 1;
 
 const state = {
   selected: new Set(),
   illusion: new Set(),
   root: null,
-  featureHost: null,
-  features: new Map(),
+  moduleHost: null,
+  modules: new Map(),
   mounted: false,
   collapsed: false
 };
 
 const api = {
   id: MODULE_ID,
-  getRoot: () => state.root,
+  apiVersion: API_VERSION,
   getPlayers,
+  getSnapshot,
   getSelectedUserIds: () => Array.from(state.selected),
   isSelected: userId => state.selected.has(userId),
   getIllusionUserIds: () => Array.from(state.illusion),
@@ -23,6 +25,10 @@ const api = {
   toggleIllusion,
   isCollapsed: () => state.collapsed,
   setCollapsed: setPanelCollapsed,
+  registerModule,
+  unregisterModule,
+  getRegisteredModuleIds: () => Array.from(state.modules.keys()),
+  // 0.1.x 서브 모듈 호환용 별칭. 신규 모듈은 registerModule을 사용한다.
   registerFeature,
   unregisterFeature,
   refresh: refreshFrame
@@ -33,14 +39,16 @@ Hooks.once("init", () => {
     scope: "world",
     config: false,
     type: Object,
-    default: { ids: [] }
+    default: { ids: [] },
+    onChange: syncSelectionFromSetting
   });
 
   game.settings.register(MODULE_ID, "illusionPlayers", {
     scope: "world",
     config: false,
     type: Object,
-    default: { ids: [] }
+    default: { ids: [] },
+    onChange: syncIllusionFromSetting
   });
 
   game.settings.register(MODULE_ID, "panelCollapsed", {
@@ -56,17 +64,17 @@ Hooks.once("init", () => {
 });
 
 Hooks.once("ready", async () => {
-  if (!game.user?.isGM) return;
-
   const savedSelection = game.settings.get(MODULE_ID, "selectedPlayers") ?? { ids: [] };
   const savedIllusion = game.settings.get(MODULE_ID, "illusionPlayers") ?? { ids: [] };
-  state.collapsed = Boolean(game.settings.get(MODULE_ID, "panelCollapsed"));
   state.selected = new Set(Array.isArray(savedSelection.ids) ? savedSelection.ids : []);
   state.illusion = new Set(Array.isArray(savedIllusion.ids) ? savedIllusion.ids : []);
 
-  pruneState();
-  mountFrame();
-  await Promise.all([persistSelection(), persistIllusion()]);
+  if (game.user?.isGM) {
+    state.collapsed = Boolean(game.settings.get(MODULE_ID, "panelCollapsed"));
+    pruneState();
+    mountFrame();
+    await Promise.all([persistSelection(), persistIllusion()]);
+  }
   Hooks.callAll(`${MODULE_ID}.ready`, api);
 });
 
@@ -83,6 +91,68 @@ function getPlayers() {
   return Array.from(game.users ?? [])
     .filter(user => !user.isGM)
     .sort((a, b) => a.name.localeCompare(b.name, game.i18n.lang || undefined));
+}
+
+function getSnapshot() {
+  return {
+    players: getPlayers(),
+    selectedUserIds: Array.from(state.selected),
+    illusionUserIds: Array.from(state.illusion)
+  };
+}
+
+function setsEqual(left, right) {
+  if (left.size !== right.size) return false;
+  for (const value of left) {
+    if (!right.has(value)) return false;
+  }
+  return true;
+}
+
+function describeSetChange(previous, next) {
+  const changed = new Set([...previous, ...next].filter(id => previous.has(id) !== next.has(id)));
+  const changedUserId = changed.size === 1 ? changed.values().next().value : null;
+  return { changedUserId, active: changedUserId === null ? null : next.has(changedUserId) };
+}
+
+function syncSelectionFromSetting(value) {
+  const next = new Set(Array.isArray(value?.ids) ? value.ids : []);
+  if (setsEqual(state.selected, next)) return;
+
+  const previous = state.selected;
+  state.selected = next;
+  const { changedUserId, active } = describeSetChange(previous, next);
+  const detail = {
+    changedUserId,
+    selected: active,
+    selectedUserIds: Array.from(next)
+  };
+  Hooks.callAll(`${MODULE_ID}.selectionChanged`, detail);
+  notifyModulesSelectionChanged(detail);
+  if (game.user?.isGM) {
+    renderPlayerList();
+    renderModules();
+  }
+}
+
+function syncIllusionFromSetting(value) {
+  const next = new Set(Array.isArray(value?.ids) ? value.ids : []);
+  if (setsEqual(state.illusion, next)) return;
+
+  const previous = state.illusion;
+  state.illusion = next;
+  const { changedUserId, active } = describeSetChange(previous, next);
+  const detail = {
+    changedUserId,
+    active,
+    illusionUserIds: Array.from(next)
+  };
+  Hooks.callAll(`${MODULE_ID}.illusionChanged`, detail);
+  notifyModulesIllusionChanged(detail);
+  if (game.user?.isGM) {
+    renderPlayerList();
+    renderModules();
+  }
 }
 
 function pruneState() {
@@ -119,7 +189,7 @@ function mountFrame() {
           <span class="fic-help">체크: 채팅 대상 · 토글: 환상 상태</span>
         </div>
         <div class="fic-players" data-fic-players></div>
-        <div class="fic-features" data-fic-features></div>
+        <div class="fic-modules" data-fic-modules></div>
       </div>
       <button type="button" class="fic-collapse-toggle" data-fic-collapse-toggle></button>
     `;
@@ -127,7 +197,7 @@ function mountFrame() {
   }
 
   state.root = root;
-  state.featureHost = root.querySelector("[data-fic-features]");
+  state.moduleHost = root.querySelector("[data-fic-modules]");
   state.mounted = true;
 
   const toggleButton = root.querySelector("[data-fic-collapse-toggle]");
@@ -138,7 +208,7 @@ function mountFrame() {
   applyCollapsedState();
 
   renderPlayerList();
-  renderFeatures();
+  renderModules();
 }
 
 function applyCollapsedState() {
@@ -217,8 +287,8 @@ function renderPlayerList() {
           selectedUserIds: Array.from(state.selected)
         };
         Hooks.callAll(`${MODULE_ID}.selectionChanged`, detail);
-        notifyFeaturesSelectionChanged(detail);
-        renderFeatures();
+        notifyModulesSelectionChanged(detail);
+        renderModules();
       } catch (error) {
         console.error(`${MODULE_ID} | selection save failed`, error);
         checkbox.checked = previous;
@@ -300,9 +370,9 @@ async function setIllusionActive(userId, active) {
     illusionUserIds: Array.from(state.illusion)
   };
   Hooks.callAll(`${MODULE_ID}.illusionChanged`, detail);
-  notifyFeaturesIllusionChanged(detail);
+  notifyModulesIllusionChanged(detail);
   renderPlayerList();
-  renderFeatures();
+  renderModules();
   return next;
 }
 
@@ -310,29 +380,72 @@ async function toggleIllusion(userId) {
   return setIllusionActive(userId, !state.illusion.has(userId));
 }
 
-function registerFeature(definition) {
-  if (!definition?.id || typeof definition.render !== "function") {
-    throw new Error("FVTT Illusion Core feature requires an id and render(host, context) function.");
+function registerModule(definition) {
+  if (!definition?.id || typeof definition.id !== "string") {
+    throw new Error("FVTT Illusion Core module requires a string id.");
   }
-  state.features.set(definition.id, definition);
+  if (state.modules.has(definition.id)) {
+    throw new Error(`FVTT Illusion Core module is already registered: ${definition.id}`);
+  }
+  const renderControl = definition.renderControl ?? definition.render ?? null;
+  if (renderControl !== null && typeof renderControl !== "function") {
+    throw new Error("FVTT Illusion Core module renderControl must be a function.");
+  }
+
+  const registered = {
+    ...definition,
+    id: definition.id,
+    title: String(definition.title ?? definition.id),
+    description: String(definition.description ?? ""),
+    order: Number.isFinite(definition.order) ? definition.order : 100,
+    renderControl
+  };
+  state.modules.set(registered.id, registered);
   if (game.ready && game.user?.isGM) {
     mountFrame();
-    renderFeatures();
   }
-  return () => unregisterFeature(definition.id);
+  try {
+    registered.onRegistered?.(makeContext(registered.id));
+  } catch (error) {
+    state.modules.delete(registered.id);
+    renderModules();
+    throw error;
+  }
+  return () => {
+    if (state.modules.get(registered.id) === registered) unregisterModule(registered.id);
+  };
+}
+
+function unregisterModule(id) {
+  const registered = state.modules.get(id);
+  if (!registered) return false;
+  try {
+    registered.onUnregistered?.(makeContext(id));
+  } catch (error) {
+    console.error(`${MODULE_ID} | module unregister handler failed: ${id}`, error);
+  }
+  state.modules.delete(id);
+  const section = state.moduleHost?.querySelector(`[data-fic-module-id="${CSS.escape(id)}"]`);
+  section?.remove();
+  state.root?.classList.toggle("has-modules", hasRenderableModules());
+  return true;
+}
+
+function registerFeature(definition) {
+  return registerModule({
+    ...definition,
+    renderControl: definition?.render
+  });
 }
 
 function unregisterFeature(id) {
-  state.features.delete(id);
-  const section = state.featureHost?.querySelector(`[data-fic-feature-id="${CSS.escape(id)}"]`);
-  section?.remove();
-  state.root?.classList.toggle("has-features", state.features.size > 0);
+  return unregisterModule(id);
 }
 
-function makeContext() {
+function makeContext(moduleId = null) {
   return {
     core: api,
-    root: state.root,
+    moduleId,
     players: getPlayers(),
     selectedUserIds: Array.from(state.selected),
     isSelected: userId => state.selected.has(userId),
@@ -341,47 +454,66 @@ function makeContext() {
   };
 }
 
-function renderFeatures() {
-  if (!state.featureHost) return;
-  const activeIds = new Set(state.features.keys());
-  for (const child of Array.from(state.featureHost.children)) {
-    if (!activeIds.has(child.dataset.ficFeatureId)) child.remove();
+function hasRenderableModules() {
+  return Array.from(state.modules.values()).some(module => module.renderControl);
+}
+
+function renderModules() {
+  if (!state.moduleHost) return;
+  const renderable = Array.from(state.modules.values())
+    .filter(module => module.renderControl)
+    .sort((left, right) => left.order - right.order || left.title.localeCompare(right.title));
+  const activeIds = new Set(renderable.map(module => module.id));
+  for (const child of Array.from(state.moduleHost.children)) {
+    if (!activeIds.has(child.dataset.ficModuleId)) child.remove();
   }
 
-  const context = makeContext();
-  for (const [id, feature] of state.features) {
-    let section = state.featureHost.querySelector(`[data-fic-feature-id="${CSS.escape(id)}"]`);
+  for (const module of renderable) {
+    const id = module.id;
+    let section = state.moduleHost.querySelector(`[data-fic-module-id="${CSS.escape(id)}"]`);
     if (!section) {
       section = document.createElement("section");
-      section.className = "fic-feature";
-      section.dataset.ficFeatureId = id;
-      state.featureHost.appendChild(section);
+      section.className = "fic-module";
+      section.dataset.ficModuleId = id;
+      section.innerHTML = `
+        <div class="fic-module-header">
+          <span class="fic-module-title"></span>
+          <span class="fic-module-description"></span>
+        </div>
+        <div class="fic-module-controls" data-fic-module-controls></div>
+      `;
+      state.moduleHost.appendChild(section);
     }
+    section.querySelector(".fic-module-title").textContent = module.title;
+    const description = section.querySelector(".fic-module-description");
+    description.textContent = module.description;
+    description.hidden = !module.description;
+    state.moduleHost.appendChild(section);
     try {
-      feature.render(section, context);
+      module.renderControl(section.querySelector("[data-fic-module-controls]"), makeContext(id));
     } catch (error) {
-      console.error(`${MODULE_ID} | feature render failed: ${id}`, error);
+      console.error(`${MODULE_ID} | module render failed: ${id}`, error);
     }
   }
-  state.root?.classList.toggle("has-features", state.features.size > 0);
+  state.root?.classList.toggle("has-modules", renderable.length > 0);
 }
 
-function notifyFeaturesSelectionChanged(detail) {
-  for (const [id, feature] of state.features) {
+function notifyModulesSelectionChanged(detail) {
+  for (const [id, module] of state.modules) {
     try {
-      feature.onSelectionChanged?.(detail, makeContext());
+      module.onSelectionChanged?.(detail, makeContext(id));
     } catch (error) {
-      console.error(`${MODULE_ID} | feature selection handler failed: ${id}`, error);
+      console.error(`${MODULE_ID} | module selection handler failed: ${id}`, error);
     }
   }
 }
 
-function notifyFeaturesIllusionChanged(detail) {
-  for (const [id, feature] of state.features) {
+function notifyModulesIllusionChanged(detail) {
+  for (const [id, module] of state.modules) {
     try {
-      feature.onIllusionChanged?.(detail, makeContext());
+      module.onIllusionChanged?.(detail, makeContext(id));
     } catch (error) {
-      console.error(`${MODULE_ID} | feature illusion handler failed: ${id}`, error);
+      console.error(`${MODULE_ID} | module illusion handler failed: ${id}`, error);
     }
   }
 }
@@ -390,7 +522,7 @@ function refreshFrame() {
   if (!game.user?.isGM) return;
   mountFrame();
   renderPlayerList();
-  renderFeatures();
+  renderModules();
 }
 
 function refreshUsers() {
@@ -406,7 +538,7 @@ function refreshUsers() {
       selectedUserIds: Array.from(state.selected)
     };
     Hooks.callAll(`${MODULE_ID}.selectionChanged`, selectionDetail);
-    notifyFeaturesSelectionChanged(selectionDetail);
+    notifyModulesSelectionChanged(selectionDetail);
 
     const illusionDetail = {
       changedUserId: null,
@@ -414,6 +546,6 @@ function refreshUsers() {
       illusionUserIds: Array.from(state.illusion)
     };
     Hooks.callAll(`${MODULE_ID}.illusionChanged`, illusionDetail);
-    notifyFeaturesIllusionChanged(illusionDetail);
+    notifyModulesIllusionChanged(illusionDetail);
   });
 }
