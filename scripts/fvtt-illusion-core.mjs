@@ -1,6 +1,21 @@
 const MODULE_ID = "fvtt-illusion-core";
 const ROOT_SELECTOR = "[data-fvtt-illusion-core-root]";
 const API_VERSION = 1;
+const DEFAULT_LANGUAGE = "ko";
+const LANGUAGE_PATH = `modules/${MODULE_ID}/lang`;
+
+let languageData = {};
+
+// Core가 먼저 기본 언어 맵을 메모리에 올려 서브 모듈의 init 단계에서도 사용할 수 있게 한다.
+try {
+  const response = await fetch(`/${LANGUAGE_PATH}/${DEFAULT_LANGUAGE}.json`, { cache: "no-cache" });
+  if (response.ok) {
+    const data = await response.json();
+    languageData = data && typeof data === "object" ? data : {};
+  }
+} catch (error) {
+  console.warn(`${MODULE_ID} | default language preload failed`, error);
+}
 
 const state = {
   selected: new Set(),
@@ -31,10 +46,30 @@ const api = {
   // 0.1.x 서브 모듈 호환용 별칭. 신규 모듈은 registerModule을 사용한다.
   registerFeature,
   unregisterFeature,
-  refresh: refreshFrame
+  refresh: refreshFrame,
+  getLanguage: () => game.settings.get(MODULE_ID, "language") ?? DEFAULT_LANGUAGE,
+  getLanguageName,
+  localize,
+  getLanguageMap,
+  loadLanguage
 };
 
 Hooks.once("init", () => {
+  game.settings.register(MODULE_ID, "language", {
+    name: "Language / 언어",
+    hint: "FVTT Illusion Core와 서브 모듈이 사용할 언어를 선택합니다.",
+    scope: "world",
+    config: true,
+    type: String,
+    choices: { ko: getLanguageName("ko") },
+    default: DEFAULT_LANGUAGE,
+    onChange: async () => {
+      await loadLanguage();
+      refreshFrame();
+      Hooks.callAll(`${MODULE_ID}.languageChanged`, api.getLanguage());
+    }
+  });
+
   game.settings.register(MODULE_ID, "selectedPlayers", {
     scope: "world",
     config: false,
@@ -64,6 +99,9 @@ Hooks.once("init", () => {
 });
 
 Hooks.once("ready", async () => {
+  await refreshLanguageChoices();
+  await loadLanguage();
+
   const savedSelection = game.settings.get(MODULE_ID, "selectedPlayers") ?? { ids: [] };
   const savedIllusion = game.settings.get(MODULE_ID, "illusionPlayers") ?? { ids: [] };
   state.selected = new Set(Array.isArray(savedSelection.ids) ? savedSelection.ids : []);
@@ -185,8 +223,8 @@ function mountFrame() {
     root.innerHTML = `
       <div class="fic-panel" data-fic-panel>
         <div class="fic-header">
-          <span class="fic-title">Illusion Control</span>
-          <span class="fic-help">체크: 채팅 대상 · 토글: 환상 상태</span>
+          <span class="fic-title">${escapeHtml(localize("core.title", "Illusion Control"))}</span>
+          <span class="fic-help">${escapeHtml(localize("core.help", "체크: 채팅 대상 · 토글: 환상 상태"))}</span>
         </div>
         <div class="fic-players" data-fic-players></div>
         <div class="fic-modules" data-fic-modules></div>
@@ -217,7 +255,7 @@ function applyCollapsedState() {
 
   const button = state.root.querySelector("[data-fic-collapse-toggle]");
   if (!button) return;
-  const action = state.collapsed ? "펼치기" : "접기";
+  const action = state.collapsed ? localize("core.expand", "펼치기") : localize("core.collapse", "접기");
   button.textContent = state.collapsed ? "▶" : "◀";
   button.title = `Illusion Control ${action}`;
   button.setAttribute("aria-label", `Illusion Control ${action}`);
@@ -255,7 +293,7 @@ function renderPlayerList() {
   if (!players.length) {
     const empty = document.createElement("span");
     empty.className = "fic-empty";
-    empty.textContent = "등록된 플레이어가 없습니다.";
+    empty.textContent = localize("core.noPlayers", "등록된 플레이어가 없습니다.");
     host.appendChild(empty);
     return;
   }
@@ -267,13 +305,13 @@ function renderPlayerList() {
 
     const sendLabel = document.createElement("label");
     sendLabel.className = "fic-send-target";
-    sendLabel.title = `${player.name} 개인 채팅 입력 대상`;
+    sendLabel.title = localize("core.sendTargetTitle", "{name} 개인 채팅 입력 대상", { name: player.name });
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.dataset.userId = player.id;
     checkbox.checked = state.selected.has(player.id);
-    checkbox.setAttribute("aria-label", `${player.name} 채팅 대상`);
+    checkbox.setAttribute("aria-label", localize("core.sendTargetAria", "{name} 채팅 대상", { name: player.name }));
     checkbox.addEventListener("change", async () => {
       const previous = !checkbox.checked;
       if (checkbox.checked) state.selected.add(player.id);
@@ -294,7 +332,7 @@ function renderPlayerList() {
         checkbox.checked = previous;
         if (previous) state.selected.add(player.id);
         else state.selected.delete(player.id);
-        ui.notifications?.error(`채팅 대상 저장 실패: ${error.message}`);
+        ui.notifications?.error(localize("core.selectionSaveFailed", "채팅 대상 저장 실패: {error}", { error: error.message }));
       }
     });
 
@@ -313,7 +351,7 @@ function renderPlayerList() {
         await toggleIllusion(player.id);
       } catch (error) {
         console.error(`${MODULE_ID} | illusion toggle failed`, error);
-        ui.notifications?.error(`환상 상태 저장 실패: ${error.message}`);
+        ui.notifications?.error(localize("core.illusionSaveFailed", "환상 상태 저장 실패: {error}", { error: error.message }));
       } finally {
         illusionButton.disabled = false;
       }
@@ -329,8 +367,8 @@ function updateIllusionButton(button, player) {
   button.classList.toggle("is-active", active);
   button.setAttribute("aria-pressed", String(active));
   button.title = active
-    ? `${player.name}: 환상 ON (눌러서 해제)`
-    : `${player.name}: 환상 OFF (눌러서 적용)`;
+    ? localize("core.illusionOn", "{name}: 환상 ON (눌러서 해제)", { name: player.name })
+    : localize("core.illusionOff", "{name}: 환상 OFF (눌러서 적용)", { name: player.name });
   button.replaceChildren();
 
   const name = document.createElement("span");
@@ -548,4 +586,79 @@ function refreshUsers() {
     Hooks.callAll(`${MODULE_ID}.illusionChanged`, illusionDetail);
     notifyModulesIllusionChanged(illusionDetail);
   });
+}
+
+
+/** 언어 코드 하나를 받아 설정창에 표시할 이름 하나를 반환한다. */
+function getLanguageName(language) {
+  switch (String(language ?? "").toLowerCase()) {
+    case "ko": return "한국어";
+    case "en": return "English";
+    case "ja": return "日本語";
+    case "zh-cn": return "简体中文";
+    case "zh-tw": return "繁體中文";
+    default: return String(language ?? "");
+  }
+}
+
+async function refreshLanguageChoices() {
+  if (!game.user?.isGM) return;
+  try {
+    const result = await FilePicker.browse("data", LANGUAGE_PATH);
+    const files = Array.isArray(result?.files) ? result.files : [];
+    const codes = files
+      .filter(file => file.toLowerCase().endsWith(".json"))
+      .map(file => file.split("/").pop().replace(/\.json$/i, ""))
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b));
+
+    const setting = game.settings.settings.get(`${MODULE_ID}.language`);
+    if (!setting) return;
+    const choices = {};
+    for (const code of codes) choices[code] = getLanguageName(code);
+    if (!Object.keys(choices).length) choices[DEFAULT_LANGUAGE] = getLanguageName(DEFAULT_LANGUAGE);
+    setting.choices = choices;
+
+    const current = game.settings.get(MODULE_ID, "language");
+    if (!Object.hasOwn(choices, current)) await game.settings.set(MODULE_ID, "language", DEFAULT_LANGUAGE);
+  } catch (error) {
+    console.warn(`${MODULE_ID} | language file scan failed`, error);
+  }
+}
+
+async function loadLanguage(language = game.settings.get(MODULE_ID, "language") ?? DEFAULT_LANGUAGE) {
+  const requested = String(language || DEFAULT_LANGUAGE);
+  for (const code of [...new Set([requested, DEFAULT_LANGUAGE])]) {
+    try {
+      const response = await fetch(`/${LANGUAGE_PATH}/${encodeURIComponent(code)}.json`, { cache: "no-cache" });
+      if (!response.ok) continue;
+      const data = await response.json();
+      languageData = data && typeof data === "object" ? data : {};
+      return languageData;
+    } catch (error) {
+      console.warn(`${MODULE_ID} | language load failed: ${code}`, error);
+    }
+  }
+  languageData = {};
+  return languageData;
+}
+
+function getLanguageMap(namespace = null) {
+  if (!namespace) return languageData;
+  return String(namespace).split(".").reduce((node, part) => node?.[part], languageData) ?? {};
+}
+
+function localize(key, fallback = key, replacements = {}) {
+  const value = String(key ?? "").split(".").reduce((node, part) => node?.[part], languageData);
+  let text = typeof value === "string" ? value : String(fallback ?? key ?? "");
+  for (const [name, replacement] of Object.entries(replacements ?? {})) {
+    text = text.replaceAll(`{${name}}`, String(replacement));
+  }
+  return text;
+}
+
+function escapeHtml(value) {
+  const div = document.createElement("div");
+  div.textContent = String(value ?? "");
+  return div.innerHTML;
 }
