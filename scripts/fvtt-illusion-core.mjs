@@ -7,7 +7,8 @@ const state = {
   root: null,
   featureHost: null,
   features: new Map(),
-  mounted: false
+  mounted: false,
+  collapsed: false
 };
 
 const api = {
@@ -20,6 +21,8 @@ const api = {
   isIllusionActive: userId => state.illusion.has(userId),
   setIllusionActive,
   toggleIllusion,
+  isCollapsed: () => state.collapsed,
+  setCollapsed: setPanelCollapsed,
   registerFeature,
   unregisterFeature,
   refresh: refreshFrame
@@ -40,6 +43,13 @@ Hooks.once("init", () => {
     default: { ids: [] }
   });
 
+  game.settings.register(MODULE_ID, "panelCollapsed", {
+    scope: "client",
+    config: false,
+    type: Boolean,
+    default: false
+  });
+
   const self = game.modules.get(MODULE_ID);
   if (self) self.api = api;
   globalThis.FVTTIllusionCore = api;
@@ -50,6 +60,7 @@ Hooks.once("ready", async () => {
 
   const savedSelection = game.settings.get(MODULE_ID, "selectedPlayers") ?? { ids: [] };
   const savedIllusion = game.settings.get(MODULE_ID, "illusionPlayers") ?? { ids: [] };
+  state.collapsed = Boolean(game.settings.get(MODULE_ID, "panelCollapsed"));
   state.selected = new Set(Array.isArray(savedSelection.ids) ? savedSelection.ids : []);
   state.illusion = new Set(Array.isArray(savedIllusion.ids) ? savedIllusion.ids : []);
 
@@ -102,12 +113,15 @@ function mountFrame() {
     root.className = "fic-root";
     root.dataset.fvttIllusionCoreRoot = "true";
     root.innerHTML = `
-      <div class="fic-header">
-        <span class="fic-title">Illusion Control</span>
-        <span class="fic-help">체크: 채팅 대상 · 토글: 환상 상태</span>
+      <div class="fic-panel" data-fic-panel>
+        <div class="fic-header">
+          <span class="fic-title">Illusion Control</span>
+          <span class="fic-help">체크: 채팅 대상 · 토글: 환상 상태</span>
+        </div>
+        <div class="fic-players" data-fic-players></div>
+        <div class="fic-features" data-fic-features></div>
       </div>
-      <div class="fic-players" data-fic-players></div>
-      <div class="fic-features" data-fic-features></div>
+      <button type="button" class="fic-collapse-toggle" data-fic-collapse-toggle></button>
     `;
     document.body.appendChild(root);
   }
@@ -116,8 +130,47 @@ function mountFrame() {
   state.featureHost = root.querySelector("[data-fic-features]");
   state.mounted = true;
 
+  const toggleButton = root.querySelector("[data-fic-collapse-toggle]");
+  if (toggleButton && toggleButton.dataset.bound !== "true") {
+    toggleButton.dataset.bound = "true";
+    toggleButton.addEventListener("click", () => void setPanelCollapsed(!state.collapsed));
+  }
+  applyCollapsedState();
+
   renderPlayerList();
   renderFeatures();
+}
+
+function applyCollapsedState() {
+  if (!state.root) return;
+  state.root.classList.toggle("is-collapsed", state.collapsed);
+
+  const button = state.root.querySelector("[data-fic-collapse-toggle]");
+  if (!button) return;
+  const action = state.collapsed ? "펼치기" : "접기";
+  button.textContent = state.collapsed ? "▶" : "◀";
+  button.title = `Illusion Control ${action}`;
+  button.setAttribute("aria-label", `Illusion Control ${action}`);
+  button.setAttribute("aria-expanded", String(!state.collapsed));
+}
+
+async function setPanelCollapsed(collapsed) {
+  if (!game.user?.isGM) return state.collapsed;
+  const previous = state.collapsed;
+  const next = Boolean(collapsed);
+  if (previous === next) return next;
+
+  state.collapsed = next;
+  applyCollapsedState();
+  try {
+    await game.settings.set(MODULE_ID, "panelCollapsed", next);
+  } catch (error) {
+    state.collapsed = previous;
+    applyCollapsedState();
+    console.error(`${MODULE_ID} | panel collapsed state save failed`, error);
+    ui.notifications?.error(`UI 접기 상태 저장 실패: ${error.message}`);
+  }
+  return state.collapsed;
 }
 
 function renderPlayerList() {
