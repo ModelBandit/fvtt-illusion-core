@@ -1,0 +1,53 @@
+{
+  "core": {
+    "title": "Illusion Control",
+    "help": "Checkbox: chat target · Toggle: illusion state",
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "noPlayers": "No players are registered.",
+    "sendTargetTitle": "Target {name} for private chat input",
+    "sendTargetAria": "Chat target: {name}",
+    "selectionSaveFailed": "Failed to save chat targets: {error}",
+    "illusionSaveFailed": "Failed to save illusion state: {error}",
+    "illusionOn": "{name}: Illusion ON (click to disable)",
+    "illusionOff": "{name}: Illusion OFF (click to enable)",
+    "languageSettingName": "Language",
+    "languageSettingHint": "Select the language used by FVTT Illusion Core and its submodules."
+  },
+  "chat": {
+    "moduleTitle": "Chat",
+    "moduleDescription": "Send different chat messages to selected players",
+    "selectPlayerHint": "Select a player to show a private message input field.",
+    "privatePlaceholder": "Message visible only to {name}",
+    "player": "Player",
+    "moderationPending": "Pending Moderation",
+    "moderationPosition": "Pending moderation {current}/{total}",
+    "displayName": "Display Name",
+    "playerName": "Player Name",
+    "replacementPlaceholder": "Alternate message to send to illusion-state players",
+    "send": "Send",
+    "moderationSendFailed": "Failed to send moderated chat: {error}",
+    "privateSendFailed": "Failed to send branched private chat: {error}",
+    "moderationWaiting": "{name}'s chat message is awaiting moderation.",
+    "moderationQueued": "Chat message was sent to the GM moderation queue.",
+    "requiresCore": "FVTT Illusion Core is required to use FVTT Illusion Chat.",
+    "settings": {
+      "effectName": "Chat transition effect: {name}",
+      "effectHint": "Use the {name} effect when transitioning chat content. Multiple effects can be enabled at the same time.",
+      "durationName": "Chat Transition Duration (ms)",
+      "durationHint": "The minimum time enabled transition effects run before the content is replaced.",
+      "shakeRangeName": "Advanced: Shake Range (px)",
+      "shakeRangeHint": "Maximum random movement range used by the Shake effect.",
+      "shakeShadowRangeName": "Advanced: Shake RGB Shadow Range (px)",
+      "shakeShadowRangeHint": "Random movement range for RGB shadow clones when Shake and RGB Split are used together.",
+      "rgbSplitOffsetName": "Advanced: RGB Split Offset (px)",
+      "rgbSplitOffsetHint": "Distance the red and cyan RGB Split shadows are offset to the left and right.",
+      "rgbSplitOpacityName": "Advanced: RGB Split Opacity",
+      "rgbSplitOpacityHint": "Opacity of the red and cyan RGB Split shadows.",
+      "effectNoiseLabel": "Noise",
+      "effectBinaryGlitchLabel": "Binary Glitch",
+      "effectRgbSplitLabel": "RGB Split",
+      "shakingEffectLabel": "Shake"
+    }
+  }
+}

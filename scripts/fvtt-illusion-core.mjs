@@ -5,6 +5,7 @@ const DEFAULT_LANGUAGE = "ko";
 const LANGUAGE_PATH = `modules/${MODULE_ID}/lang`;
 
 let languageData = {};
+const moduleInitializers = new Map();
 
 // Core가 먼저 기본 언어 맵을 메모리에 올려 서브 모듈의 init 단계에서도 사용할 수 있게 한다.
 try {
@@ -51,13 +52,21 @@ const api = {
   getLanguageName,
   localize,
   getLanguageMap,
-  loadLanguage
+  loadLanguage,
+  registerInitializer
 };
 
+// 모듈 평가 시점에는 Foundry의 game 객체를 참조하지 않는다.
+// 서브 모듈이 가벼운 initializer를 미리 등록할 수 있도록 전역 API만 먼저 공개한다.
+globalThis.FVTTIllusionCore = api;
+
 Hooks.once("init", () => {
+  // game.modules는 Foundry init 시점부터 사용한다.
+  const coreModule = game.modules.get(MODULE_ID);
+  if (coreModule) coreModule.api = api;
   game.settings.register(MODULE_ID, "language", {
-    name: "Language / 언어",
-    hint: "FVTT Illusion Core와 서브 모듈이 사용할 언어를 선택합니다.",
+    name: localize("core.languageSettingName"),
+    hint: localize("core.languageSettingHint"),
     scope: "world",
     config: true,
     type: String,
@@ -65,6 +74,7 @@ Hooks.once("init", () => {
     default: DEFAULT_LANGUAGE,
     onChange: async () => {
       await loadLanguage();
+      refreshCoreSettingLocalization();
       refreshFrame();
       Hooks.callAll(`${MODULE_ID}.languageChanged`, api.getLanguage());
     }
@@ -93,14 +103,21 @@ Hooks.once("init", () => {
     default: false
   });
 
-  const self = game.modules.get(MODULE_ID);
-  if (self) self.api = api;
-  globalThis.FVTTIllusionCore = api;
+  // Foundry 설정 등록 등 각 서브 모듈이 직접 처리해야 하는 작업은 여기서 실행하지 않는다.
+  // Core 데이터/API 준비만 끝난 뒤, 미리 등록된 가벼운 초기화 함수에 Core API를 전달한다.
+  for (const [id, initializer] of moduleInitializers) {
+    try {
+      initializer(api);
+    } catch (error) {
+      console.error(`${MODULE_ID} | initializer failed: ${id}`, error);
+    }
+  }
 });
 
 Hooks.once("ready", async () => {
   await refreshLanguageChoices();
   await loadLanguage();
+  refreshCoreSettingLocalization();
 
   const savedSelection = game.settings.get(MODULE_ID, "selectedPlayers") ?? { ids: [] };
   const savedIllusion = game.settings.get(MODULE_ID, "illusionPlayers") ?? { ids: [] };
@@ -601,6 +618,13 @@ function getLanguageName(language) {
   }
 }
 
+function refreshCoreSettingLocalization() {
+  const setting = game.settings.settings.get(`${MODULE_ID}.language`);
+  if (!setting) return;
+  setting.name = localize("core.languageSettingName");
+  setting.hint = localize("core.languageSettingHint");
+}
+
 async function refreshLanguageChoices() {
   if (!game.user?.isGM) return;
   try {
@@ -641,6 +665,14 @@ async function loadLanguage(language = game.settings.get(MODULE_ID, "language") 
   }
   languageData = {};
   return languageData;
+}
+
+function registerInitializer(id, initializer) {
+  if (!id || typeof initializer !== "function") {
+    throw new TypeError(`${MODULE_ID} | registerInitializer requires an id and function`);
+  }
+  moduleInitializers.set(id, initializer);
+  return () => moduleInitializers.delete(id);
 }
 
 function getLanguageMap(namespace = null) {
