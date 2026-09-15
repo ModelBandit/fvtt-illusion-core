@@ -1,6 +1,5 @@
 const MODULE_ID = "fvtt-illusion-core";
 const ROOT_SELECTOR = "[data-fvtt-illusion-core-root]";
-const API_VERSION = 1;
 const DEFAULT_LANGUAGE = "ko";
 const LANGUAGE_PATH = `modules/${MODULE_ID}/lang`;
 
@@ -29,24 +28,14 @@ const state = {
 };
 
 const api = {
-  id: MODULE_ID,
-  apiVersion: API_VERSION,
   getPlayers,
-  getSnapshot,
   getSelectedUserIds: () => Array.from(state.selected),
-  isSelected: userId => state.selected.has(userId),
   getIllusionUserIds: () => Array.from(state.illusion),
   isIllusionActive: userId => state.illusion.has(userId),
   setIllusionActive,
   toggleIllusion,
-  isCollapsed: () => state.collapsed,
-  setCollapsed: setPanelCollapsed,
   registerModule,
   unregisterModule,
-  getRegisteredModuleIds: () => Array.from(state.modules.keys()),
-  // 0.1.x 서브 모듈 호환용 별칭. 신규 모듈은 registerModule을 사용한다.
-  registerFeature,
-  unregisterFeature,
   refresh: refreshFrame,
   getLanguage: () => game.settings.get(MODULE_ID, "language") ?? DEFAULT_LANGUAGE,
   getLanguageName,
@@ -146,14 +135,6 @@ function getPlayers() {
   return Array.from(game.users ?? [])
     .filter(user => !user.isGM)
     .sort((a, b) => a.name.localeCompare(b.name, game.i18n.lang || undefined));
-}
-
-function getSnapshot() {
-  return {
-    players: getPlayers(),
-    selectedUserIds: Array.from(state.selected),
-    illusionUserIds: Array.from(state.illusion)
-  };
 }
 
 function setsEqual(left, right) {
@@ -486,25 +467,13 @@ function unregisterModule(id) {
   return true;
 }
 
-function registerFeature(definition) {
-  return registerModule({
-    ...definition,
-    renderControl: definition?.render
-  });
-}
-
-function unregisterFeature(id) {
-  return unregisterModule(id);
-}
-
 function makeContext(moduleId = null) {
   return {
     core: api,
     moduleId,
     players: getPlayers(),
     selectedUserIds: Array.from(state.selected),
-    isSelected: userId => state.selected.has(userId),
-    illusionUserIds: Array.from(state.illusion),
+      illusionUserIds: Array.from(state.illusion),
     isIllusionActive: userId => state.illusion.has(userId)
   };
 }

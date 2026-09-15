@@ -12,5 +12,8 @@
   ],
   "styles": [
     "styles/fvtt-illusion-core.css"
-  ]
+  ],
+  "url": "https://github.com/ModelBandit/fvtt-illusion-core",
+  "manifest": "https://raw.githubusercontent.com/ModelBandit/fvtt-illusion-core/main/module.json",
+  "download": "https://github.com/ModelBandit/fvtt-illusion-core/archive/refs/heads/main.zip"
 }
