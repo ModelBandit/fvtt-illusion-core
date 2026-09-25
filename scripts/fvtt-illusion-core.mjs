@@ -13,35 +13,45 @@ try {
     const data = await response.json();
     languageData = data && typeof data === "object" ? data : {};
   }
-} catch (error) {
+} 
+catch (error) {
   console.warn(`${MODULE_ID} | default language preload failed`, error);
 }
 
+// fvtt에서 업어온 정보와 연출을 위한 UI 셋팅정보
 const state = {
-  selected: new Set(),
-  illusion: new Set(),
-  root: null,
-  moduleHost: null,
-  modules: new Map(),
-  mounted: false,
-  collapsed: false
+  selected: new Set(), // 가짜 메세지 전송대상 설정
+  illusion: new Set(), // 토글. 가짜/원본 메세지 출력 상태를 설정
+  root: null, // UI root. 서브모듈을 추가하면서 적용 모듈에 따라 조합이 용이하도록 Root를 두고 분리하여 관리
+  moduleHost: null, // 실제로 UI가 들어가는 공간. root의 하단에 위치함
+  modules: new Map(), // 넣는 모듈정보
+  collapsed: false // 접기/펼치기
 };
 
+// 
 const api = {
-  getPlayers,
-  getSelectedUserIds: () => Array.from(state.selected),
-  getIllusionUserIds: () => Array.from(state.illusion),
+  getPlayers, // fvtt에서 이용자 정보 긁어옴
+  getSelectedUserIds: () => Array.from(state.selected), // 메세지 전송 대상
+  getIllusionUserIds: () => Array.from(state.illusion), // 가짜 메세지 출력시킬 대상
+  //--merge1--- to much split
   isIllusionActive: userId => state.illusion.has(userId),
   setIllusionActive,
   toggleIllusion,
+  //--merge1---
+  //--merge2---
   registerModule,
   unregisterModule,
+  //--merge2---
+
   refresh: refreshFrame,
+  
+  //--merge3---
   getLanguage: () => game.settings.get(MODULE_ID, "language") ?? DEFAULT_LANGUAGE,
   getLanguageName,
   localize,
   getLanguageMap,
   loadLanguage,
+  //--merge3---
   registerInitializer
 };
 
@@ -52,7 +62,9 @@ globalThis.FVTTIllusionCore = api;
 Hooks.once("init", () => {
   // game.modules는 Foundry init 시점부터 사용한다.
   const coreModule = game.modules.get(MODULE_ID);
-  if (coreModule) coreModule.api = api;
+  if (coreModule) 
+    coreModule.api = api;
+
   game.settings.register(MODULE_ID, "language", {
     name: localize("core.languageSettingName"),
     hint: localize("core.languageSettingHint"),
@@ -234,7 +246,6 @@ function mountFrame() {
 
   state.root = root;
   state.moduleHost = root.querySelector("[data-fic-modules]");
-  state.mounted = true;
 
   const toggleButton = root.querySelector("[data-fic-collapse-toggle]");
   if (toggleButton && toggleButton.dataset.bound !== "true") {
@@ -261,10 +272,14 @@ function applyCollapsedState() {
 }
 
 async function setPanelCollapsed(collapsed) {
-  if (!game.user?.isGM) return state.collapsed;
+  if (!game.user?.isGM) 
+    return state.collapsed;
+
   const previous = state.collapsed;
   const next = Boolean(collapsed);
-  if (previous === next) return next;
+
+  if (previous === next) 
+    return next;
 
   state.collapsed = next;
   applyCollapsedState();
@@ -543,7 +558,8 @@ function notifyModulesIllusionChanged(detail) {
 }
 
 function refreshFrame() {
-  if (!game.user?.isGM) return;
+  if (!game.user?.isGM) 
+    return;
   mountFrame();
   renderPlayerList();
   renderModules();
@@ -578,11 +594,17 @@ function refreshUsers() {
 /** 언어 코드 하나를 받아 설정창에 표시할 이름 하나를 반환한다. */
 function getLanguageName(language) {
   switch (String(language ?? "").toLowerCase()) {
-    case "ko": return "한국어";
-    case "en": return "English";
-    case "ja": return "日本語";
-    case "zh-cn": return "简体中文";
-    case "zh-tw": return "繁體中文";
+    case "ko": 
+      return "한국어";
+    //---unused---
+    case "en": 
+      return "English";
+    case "ja": 
+      return "日本語";
+    case "zh-cn": 
+      return "简体中文";
+    case "zh-tw": 
+      return "繁體中文";
     default: return String(language ?? "");
   }
 }
@@ -599,22 +621,28 @@ async function refreshLanguageChoices() {
   try {
     const result = await FilePicker.browse("data", LANGUAGE_PATH);
     const files = Array.isArray(result?.files) ? result.files : [];
-    const codes = files
+    const codes = files // lang 폴더의 모든 json을 긁어와서 읽고 확장자 때서 표시
       .filter(file => file.toLowerCase().endsWith(".json"))
-      .map(file => file.split("/").pop().replace(/\.json$/i, ""))
-      .filter(Boolean)
-      .sort((a, b) => a.localeCompare(b));
+      .map(file => file.split("/").pop().replace(/\.json$/i, ""));
 
     const setting = game.settings.settings.get(`${MODULE_ID}.language`);
-    if (!setting) return;
+    if (!setting) 
+      return;
+
     const choices = {};
-    for (const code of codes) choices[code] = getLanguageName(code);
-    if (!Object.keys(choices).length) choices[DEFAULT_LANGUAGE] = getLanguageName(DEFAULT_LANGUAGE);
+    for (const code of codes) 
+      choices[code] = getLanguageName(code);
+
+    if (!Object.keys(choices).length) 
+      choices[DEFAULT_LANGUAGE] = getLanguageName(DEFAULT_LANGUAGE);
+
     setting.choices = choices;
 
     const current = game.settings.get(MODULE_ID, "language");
-    if (!Object.hasOwn(choices, current)) await game.settings.set(MODULE_ID, "language", DEFAULT_LANGUAGE);
-  } catch (error) {
+    if (!Object.hasOwn(choices, current)) 
+      await game.settings.set(MODULE_ID, "language", DEFAULT_LANGUAGE);
+  } 
+  catch (error) {
     console.warn(`${MODULE_ID} | language file scan failed`, error);
   }
 }
