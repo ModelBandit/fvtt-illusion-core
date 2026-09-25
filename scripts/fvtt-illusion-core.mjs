@@ -44,7 +44,7 @@ const api = {
   //--merge2---
 
   refresh: refreshFrame,
-  
+
   //--merge3---
   getLanguage: () => game.settings.get(MODULE_ID, "language") ?? DEFAULT_LANGUAGE,
   getLanguageName,
@@ -143,13 +143,15 @@ Hooks.on("createUser", refreshUsers);
 Hooks.on("updateUser", refreshUsers);
 Hooks.on("deleteUser", refreshUsers);
 
-function getPlayers() {
+function getPlayers() 
+{
   return Array.from(game.users ?? [])
     .filter(user => !user.isGM)
     .sort((a, b) => a.name.localeCompare(b.name, game.i18n.lang || undefined));
 }
 
-function setsEqual(left, right) {
+function setsEqual(left, right) 
+{
   if (left.size !== right.size) return false;
   for (const value of left) {
     if (!right.has(value)) return false;
@@ -157,13 +159,15 @@ function setsEqual(left, right) {
   return true;
 }
 
-function describeSetChange(previous, next) {
+function describeSetChange(previous, next) 
+{
   const changed = new Set([...previous, ...next].filter(id => previous.has(id) !== next.has(id)));
   const changedUserId = changed.size === 1 ? changed.values().next().value : null;
   return { changedUserId, active: changedUserId === null ? null : next.has(changedUserId) };
 }
 
-function syncSelectionFromSetting(value) {
+function syncSelectionFromSetting(value) 
+{
   const next = new Set(Array.isArray(value?.ids) ? value.ids : []);
   if (setsEqual(state.selected, next)) return;
 
@@ -183,7 +187,8 @@ function syncSelectionFromSetting(value) {
   }
 }
 
-function syncIllusionFromSetting(value) {
+function syncIllusionFromSetting(value) 
+{
   const next = new Set(Array.isArray(value?.ids) ? value.ids : []);
   if (setsEqual(state.illusion, next)) return;
 
@@ -203,7 +208,8 @@ function syncIllusionFromSetting(value) {
   }
 }
 
-function pruneState() {
+function pruneState() 
+{
   const validIds = new Set(getPlayers().map(user => user.id));
   for (const set of [state.selected, state.illusion]) {
     for (const id of Array.from(set)) {
@@ -380,8 +386,8 @@ function updateIllusionButton(button, player) {
   button.classList.toggle("is-active", active);
   button.setAttribute("aria-pressed", String(active));
   button.title = active
-    ? localize("core.illusionOn", "{name}: 환상 ON (눌러서 해제)", { name: player.name })
-    : localize("core.illusionOff", "{name}: 환상 OFF (눌러서 적용)", { name: player.name });
+    ? localize("core.illusionOn", { name: player.name })
+    : localize("core.illusionOff", { name: player.name });
   button.replaceChildren();
 
   const name = document.createElement("span");
@@ -467,7 +473,8 @@ function registerModule(definition) {
   };
 }
 
-function unregisterModule(id) {
+function unregisterModule(id) 
+{
   const registered = state.modules.get(id);
   if (!registered) return false;
   try {
@@ -482,7 +489,8 @@ function unregisterModule(id) {
   return true;
 }
 
-function makeContext(moduleId = null) {
+function makeContext(moduleId = null) 
+{
   return {
     core: api,
     moduleId,
@@ -493,11 +501,13 @@ function makeContext(moduleId = null) {
   };
 }
 
-function hasRenderableModules() {
+function hasRenderableModules() 
+{
   return Array.from(state.modules.values()).some(module => module.renderControl);
 }
 
-function renderModules() {
+function renderModules() 
+{
   if (!state.moduleHost) return;
   const renderable = Array.from(state.modules.values())
     .filter(module => module.renderControl)
@@ -537,7 +547,8 @@ function renderModules() {
   state.root?.classList.toggle("has-modules", renderable.length > 0);
 }
 
-function notifyModulesSelectionChanged(detail) {
+function notifyModulesSelectionChanged(detail) 
+{
   for (const [id, module] of state.modules) {
     try {
       module.onSelectionChanged?.(detail, makeContext(id));
@@ -547,7 +558,8 @@ function notifyModulesSelectionChanged(detail) {
   }
 }
 
-function notifyModulesIllusionChanged(detail) {
+function notifyModulesIllusionChanged(detail) 
+{
   for (const [id, module] of state.modules) {
     try {
       module.onIllusionChanged?.(detail, makeContext(id));
@@ -557,7 +569,8 @@ function notifyModulesIllusionChanged(detail) {
   }
 }
 
-function refreshFrame() {
+function refreshFrame() 
+{
   if (!game.user?.isGM) 
     return;
   mountFrame();
@@ -565,8 +578,10 @@ function refreshFrame() {
   renderModules();
 }
 
-function refreshUsers() {
-  if (!game.user?.isGM) return;
+function refreshUsers() 
+{
+  if (!game.user?.isGM) 
+    return;
   queueMicrotask(async () => {
     pruneState();
     await Promise.all([persistSelection(), persistIllusion()]);
@@ -592,7 +607,8 @@ function refreshUsers() {
 
 
 /** 언어 코드 하나를 받아 설정창에 표시할 이름 하나를 반환한다. */
-function getLanguageName(language) {
+function getLanguageName(language) 
+{
   switch (String(language ?? "").toLowerCase()) {
     case "ko": 
       return "한국어";
@@ -609,14 +625,16 @@ function getLanguageName(language) {
   }
 }
 
-function refreshCoreSettingLocalization() {
+function refreshCoreSettingLocalization() 
+{
   const setting = game.settings.settings.get(`${MODULE_ID}.language`);
   if (!setting) return;
   setting.name = localize("core.languageSettingName");
   setting.hint = localize("core.languageSettingHint");
 }
 
-async function refreshLanguageChoices() {
+async function refreshLanguageChoices() 
+{
   if (!game.user?.isGM) return;
   try {
     const result = await FilePicker.browse("data", LANGUAGE_PATH);
@@ -647,7 +665,9 @@ async function refreshLanguageChoices() {
   }
 }
 
-async function loadLanguage(language = game.settings.get(MODULE_ID, "language") ?? DEFAULT_LANGUAGE) {
+// done
+async function loadData(language = game.settings.get(MODULE_ID, "language") ?? DEFAULT_LANGUAGE) 
+{
   const requested = String(language || DEFAULT_LANGUAGE);
   for (const code of [...new Set([requested, DEFAULT_LANGUAGE])]) {
     try {
@@ -664,7 +684,8 @@ async function loadLanguage(language = game.settings.get(MODULE_ID, "language") 
   return languageData;
 }
 
-function registerInitializer(id, initializer) {
+function registerInitializer(id, initializer) 
+{
   if (!id || typeof initializer !== "function") {
     throw new TypeError(`${MODULE_ID} | registerInitializer requires an id and function`);
   }
@@ -677,9 +698,9 @@ function getLanguageMap(namespace = null) {
   return String(namespace).split(".").reduce((node, part) => node?.[part], languageData) ?? {};
 }
 
-function localize(key, fallback = key, replacements = {}) {
+function localize(key, replacements = {}) {
   const value = String(key ?? "").split(".").reduce((node, part) => node?.[part], languageData);
-  let text = typeof value === "string" ? value : String(fallback ?? key ?? "");
+  let text = key;
   for (const [name, replacement] of Object.entries(replacements ?? {})) {
     text = text.replaceAll(`{${name}}`, String(replacement));
   }

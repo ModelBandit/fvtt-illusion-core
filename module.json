@@ -8,7 +8,7 @@
     "verified": "12"
   },
   "esmodules": [
-    "scripts/fvtt-illusion-core.mjs"
+    "scripts/fvtt-illusion-core copy.mjs"
   ],
   "styles": [
     "styles/fvtt-illusion-core.css"
