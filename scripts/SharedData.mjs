@@ -27,9 +27,10 @@ export class SharedData
             "languageSettingName": "",
             "languageSettingHint": ""
         },
+        "chat": {},
     };
 
-    static langFiles = {};
+    static langFiles = { ko: getLanguageName("ko") };// is default
 
     static state = {
         selected: new Set(), // 가짜 메세지 전송대상 설정
@@ -39,4 +40,31 @@ export class SharedData
         modules: new Map(), // 넣는 모듈정보
         collapsed: false // 접기/펼치기
     };
+
+    static async init()
+    {
+        window.localStorage
+    }
+}
+
+/** 언어 코드를 설정 UI에 표시할 이름으로 변환 */
+export function getLanguageName(language) 
+{
+    switch (language) 
+    {
+        case "ko": 
+            return "한국어";
+        //---unused---
+        case "en": 
+            return "English";
+        case "ja": 
+            return "日本語";
+        case "zh-cn": 
+            return "简体中文";
+        case "zh-tw": 
+            return "繁體中文";
+        //---unused---
+        default: 
+            return language;
+    }
 }

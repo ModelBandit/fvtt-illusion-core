@@ -66,8 +66,8 @@ Hooks.once("init", () => {
     coreModule.api = api;
 
   game.settings.register(MODULE_ID, "language", {
-    name: localize("core.languageSettingName"),
-    hint: localize("core.languageSettingHint"),
+    name: "core.languageSettingName",
+    hint: "core.languageSettingHint",
     scope: "world",
     config: true,
     type: String,

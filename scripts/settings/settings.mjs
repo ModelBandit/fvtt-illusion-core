@@ -1,26 +1,6 @@
 
 
 
-/** 언어 코드를 설정 UI에 표시할 이름으로 변환 */
-function getLanguageName(language) 
-{
-  switch (String(language ?? "").toLowerCase()) {
-    case "ko": 
-        return "한국어";
-    //---unused---
-    case "en": 
-        return "English";
-    case "ja": 
-        return "日本語";
-    case "zh-cn": 
-        return "简体中文";
-    case "zh-tw": 
-        return "繁體中文";
-    //---unused---
-    default: 
-        return String(language ?? "");
-  }
-}
 
 export function syncSelectionFromSetting(value) 
 {
