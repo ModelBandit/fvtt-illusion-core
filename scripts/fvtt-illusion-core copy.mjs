@@ -47,8 +47,8 @@ Hooks.once("init", async () => {
   // localize data setter
   const setting = game.settings.settings.get(`${SharedData.moduleInfo.id}.language`);
 
-  setting.name = game.i18n.localize(SharedData.langBase["core"]["languageSettingName"]);
-  setting.hint = game.i18n.localize(SharedData.langBase["core"]["languageSettingHint"]);
+  setting.name = SharedData.langBase["core"]["languageSettingName"];
+  setting.hint = SharedData.langBase["core"]["languageSettingHint"];
   
   game.settings.register(SharedData.moduleInfo.id, "selectedPlayers", {
     scope: "world",
