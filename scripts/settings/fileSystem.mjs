@@ -1,6 +1,6 @@
 export const MODULE_ROOT = "modules/fvtt-illusion-core"
 
-// 의존적 로딩
+// FVTT 의존적 로딩
 export async function LoadFileNames(dir)
 {
     const result = await FilePicker.browse("data", dir);
