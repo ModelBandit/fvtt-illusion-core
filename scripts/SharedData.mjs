@@ -40,11 +40,6 @@ export class SharedData
         modules: new Map(), // 넣는 모듈정보
         collapsed: false // 접기/펼치기
     };
-
-    static async init()
-    {
-        window.localStorage
-    }
 }
 
 /** 언어 코드를 설정 UI에 표시할 이름으로 변환 */

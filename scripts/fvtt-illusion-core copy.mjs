@@ -1,10 +1,10 @@
-import { MODULE_ROOT, LoadFileNames, LoadFile } from "./settings/utility.mjs";
+import { MODULE_ROOT, LoadFileNames, LoadFile } from "./settings/fileSystem.mjs";
 import { syncSelectionFromSetting, syncIllusionFromSetting } from "./settings/settings.mjs"
 import { SharedData, getLanguageName } from "./SharedData.mjs";
 
 const LANGUAGE_DIR = `${MODULE_ROOT}/lang`;
 const ROOT_SELECTOR = "[data-fvtt-illusion-core-root]";
-
+globalThis.fvttIllusion.core = this;
 
 // fvtt init
 Hooks.once("init", async () => {

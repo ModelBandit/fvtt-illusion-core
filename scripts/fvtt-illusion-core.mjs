@@ -127,7 +127,13 @@ Hooks.once("ready", async () => {
 
   if (game.user?.isGM) {
     state.collapsed = Boolean(game.settings.get(MODULE_ID, "panelCollapsed"));
-    pruneState();
+    // pruneState();
+    const validIds = new Set(getPlayers().map(user => user.id));
+    for (const set of [state.selected, state.illusion]) {
+      for (const id of Array.from(set)) {
+        if (!validIds.has(id)) set.delete(id);
+      }
+    }
     mountFrame();
     await Promise.all([persistSelection(), persistIllusion()]);
   }
