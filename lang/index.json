@@ -1,0 +1,12 @@
+{
+  "language": {
+    "example": {
+      "name": "example",
+      "path": "/modules/fvtt-illusion-core/lang/example.json"
+    },
+    "ko": {
+      "name": "한국어",
+      "path": "/modules/fvtt-illusion-core/lang/ko.json"
+    }
+  }
+}

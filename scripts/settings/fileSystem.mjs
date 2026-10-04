@@ -1,7 +1,7 @@
 export const MODULE_ROOT = "modules/fvtt-illusion-core"
 
 // FVTT 의존적 로딩
-export async function LoadFileNames(dir)
+export async function loadFileNames(dir)
 {
     const result = await FilePicker.browse("data", dir);
     const files = Array.isArray(result?.files) ? result.files : [];
@@ -9,10 +9,11 @@ export async function LoadFileNames(dir)
         .filter(file => file.toLowerCase().endsWith(".json"))
         .map(file => file.split("/").pop().replace(/\.json$/i, ""));
 
+    
     return data;
 }
 
-export async function LoadFile(dir, name, ext)
+export async function loadFile(dir, name, ext)
 {
     const fullPath = `/${dir}/${encodeURIComponent(name)}.${ext}`;
     try{
@@ -22,4 +23,20 @@ export async function LoadFile(dir, name, ext)
     catch{
         console.error("File Loading Error");
     }
+}
+
+// Used only for generating INDEX files.
+export async function rebuildIndex(dir, json)
+{
+    const indexFile = new File(
+        [JSON.stringify(json, null, 2)],
+        "index.json",
+        { type: "application/json" }
+    );
+
+    await FilePicker.upload(
+        "data",
+        dir,
+        indexFile
+    )
 }
