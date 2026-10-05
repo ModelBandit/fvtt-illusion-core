@@ -98,7 +98,8 @@ Hooks.once("setup", async () => {
     {
       index_data.language[vKey] = {
         name: getLanguageName(vKey),
-        path: `/${LANGUAGE_DIR}/${encodeURIComponent(vKey)}.json`
+        path: `/${LANGUAGE_DIR}/${vKey}.json`
+        //encodeURIComponent(name) // url에서 문법적으로 의미있는 특수문자들 걸러줌
       };
     }
   }

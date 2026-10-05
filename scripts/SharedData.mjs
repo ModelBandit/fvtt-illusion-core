@@ -30,7 +30,7 @@ export class SharedData
         "chat": {},
     };
 
-    static langFiles = { ko: getLanguageName("ko") };// is default
+    static langFiles = {  };// is default
 
     static state = {
         selected: new Set(), // 가짜 메세지 전송대상 설정
@@ -42,24 +42,33 @@ export class SharedData
     };
 }
 
+const LANG_NAMES = {
+    "en": "English",
+    "de": "Deutsch",
+    "fr": "Français",
+    "es": "Español",
+    "pt-BR": "Português (Brasil)",
+    "it": "Italiano",
+
+    "ja": "日本語",
+    "ko": "한국어",
+    "zh-CN": "简体中文",
+    "zh-TW": "繁體中文",
+
+    "pl": "Polski",
+    "ru": "Русский",
+    "sv": "Svenska",
+    "fi": "Suomi",
+    "cs": "Čeština",
+    "nl": "Nederlands",
+    "th": "ไทย",
+
+    "ar": "العربية"
+};
 /** 언어 코드를 설정 UI에 표시할 이름으로 변환 */
 export function getLanguageName(language) 
 {
-    switch (language) 
-    {
-        case "ko": 
-            return "한국어";
-        //---unused---
-        case "en": 
-            return "English";
-        case "ja": 
-            return "日本語";
-        case "zh-cn": 
-            return "简体中文";
-        case "zh-tw": 
-            return "繁體中文";
-        //---unused---
-        default: 
-            return language;
-    }
+    if(language in LANG_NAMES)
+        return LANG_NAMES[language];
+    return language;
 }
