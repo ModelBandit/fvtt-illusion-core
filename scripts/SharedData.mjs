@@ -1,13 +1,25 @@
 export class SharedData
 {
     static moduleInfo = {
-        "id": "",
-        "title": "",
-        "description": "",
-        "version": "",
-        "compatibility": {
-            "minimum": "",
-            "verified": ""
+        "core": {
+            "id": "",
+            "title": "",
+            "description": "",
+            "version": "",
+            "compatibility": {
+                "minimum": "",
+                "verified": ""
+            }
+        },
+        "chat": {
+            "id": "",
+            "title": "",
+            "description": "",
+            "version": "",
+            "compatibility": {
+                "minimum": "",
+                "verified": ""
+            }
         }
     };
 

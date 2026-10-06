@@ -1,4 +1,3 @@
-export const MODULE_ROOT = "modules/fvtt-illusion-core"
 
 // FVTT 의존적 로딩
 export async function loadFileNames(dir)
