@@ -1,6 +1,6 @@
 {
-  "id": "fvtt-illusion-core",
-  "title": "fvtt-illusion-core",
+  "id": "fvtt-illusion-0-core",
+  "title": "fvtt illusion core",
   "description": "Shared target-selection UI and extension frame for FVTT Illusion modules.",
   "version": "0.2.2",
   "compatibility": {

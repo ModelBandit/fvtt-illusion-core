@@ -4,7 +4,6 @@ import { SharedData, getLanguageName } from "./SharedData.mjs";
 
 const LANGUAGE_DIR = `${MODULE_ROOT}/lang`;
 const ROOT_SELECTOR = "[data-fvtt-illusion-core-root]";
-//globalThis.fvttIllusion.core = this;
 
 // fvtt init
 Hooks.once("init", async () => {
@@ -46,6 +45,9 @@ Hooks.once("init", async () => {
       // console.log(`langBase is ${LOCALIZE_DATA[moduleName][key]}`);
     }
   }
+
+  globalThis.fvttIllusion.core.sharedData = SharedData;
+
   // localize data setter
   const setting = game.settings.settings.get(`${SharedData.moduleInfo.id}.language`);
 
