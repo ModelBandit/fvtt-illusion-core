@@ -6,10 +6,6 @@ const MODULE_ROOT = "modules/fvtt-illusion-0-core";
 const LANGUAGE_DIR = `${MODULE_ROOT}/lang`;
 const ROOT_SELECTOR = "[data-fvtt-illusion-core-root]";
 
-globalThis.fvttIllusion = {
-  sharedData: SharedData,
-  loadFile: loadFile
-};
 
 // fvtt init
 Hooks.once("init", async () => {
@@ -82,6 +78,11 @@ Hooks.once("init", async () => {
     default: false
   });
   
+  globalThis.fvttIllusion = {
+    sharedData: SharedData,
+    loadFile: loadFile
+  };
+  Hooks.callAll("fvtt-illusion-core.lateinit");
 });
 
 // first module init
