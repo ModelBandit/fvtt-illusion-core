@@ -1,4 +1,4 @@
-import { loadFileNames, loadFile } from "./settings/fileSystem.mjs";
+import { loadFileNames, loadFile, buildObject } from "./settings/fileSystem.mjs";
 import { syncSelectionFromSetting, syncIllusionFromSetting } from "./settings/settings.mjs"
 import { SharedData, getLanguageName } from "./SharedData.mjs";
 
@@ -40,14 +40,16 @@ Hooks.once("init", async () => {
   // load data
   const LOCALIZE_DATA = await loadFile(LANGUAGE_DIR, LANG ?? "ko", "json");
   // console.log(`title is ${LOCALIZE_DATA}`);
-  for(const moduleName of Object.keys(LOCALIZE_DATA)){
-    for(const key of Object.keys(LOCALIZE_DATA[moduleName])){
-      SharedData.langBase[moduleName][key] = LOCALIZE_DATA[moduleName][key];
-      // console.log(`LOCALIZE_DATA is ${SharedData.langBase[moduleName][key]}`);
-      // console.log(`langBase is ${LOCALIZE_DATA[moduleName][key]}`);
-    }
-  }
-
+  // for(const moduleName of Object.keys(LOCALIZE_DATA)){
+  //   for(const key of Object.keys(LOCALIZE_DATA[moduleName])){
+  //     SharedData.langBase[moduleName][key] = LOCALIZE_DATA[moduleName][key];
+  //     // console.log(`LOCALIZE_DATA is ${SharedData.langBase[moduleName][key]}`);
+  //     // console.log(`langBase is ${LOCALIZE_DATA[moduleName][key]}`);
+  //   }
+  // }
+  const asd = Object.keys(LOCALIZE_DATA);
+  console.log(asd.length)
+  buildObject(SharedData.langBase, LOCALIZE_DATA);
 
   // localize data setter
   const setting = game.settings.settings.get(`${SharedData.moduleInfo.core.id}.language`);

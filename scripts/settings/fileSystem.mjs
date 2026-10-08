@@ -39,3 +39,14 @@ export async function rebuildIndex(dir, json)
         indexFile
     )
 }
+export function buildObject(dst, src)
+{
+    const keys = Object.keys(src);
+    for(const key of keys)
+    {
+        if(typeof(src[key]) === "object")
+            buildObject(dst[key], src[key]);
+
+        dst[key] = src[key];
+    }
+}
