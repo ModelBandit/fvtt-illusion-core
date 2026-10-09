@@ -9,7 +9,28 @@ export class SharedData
             "compatibility": {
                 "minimum": "",
                 "verified": ""
-            }
+            },
+            "relationships": {
+                "requires": [
+                {
+                    "id": "",
+                    "type": "module",
+                    "compatibility": {
+                    "minimum": ""
+                    }
+                }
+                ]
+            },
+            "socket": true,
+            "esmodules": [
+                ""
+            ],
+            "styles": [
+                ""
+            ],
+            "url": "",
+            "manifest": "",
+            "download": ""
         },
         "chat": {
             "id": "",
@@ -19,7 +40,28 @@ export class SharedData
             "compatibility": {
                 "minimum": "",
                 "verified": ""
-            }
+            },
+            "relationships": {
+                "requires": [
+                {
+                    "id": "",
+                    "type": "module",
+                    "compatibility": {
+                    "minimum": ""
+                    }
+                }
+                ]
+            },
+            "socket": true,
+            "esmodules": [
+                ""
+            ],
+            "styles": [
+                ""
+            ],
+            "url": "",
+            "manifest": "",
+            "download": ""
         }
     };
 
@@ -41,11 +83,23 @@ export class SharedData
         },
         "chat": {
             "effect":{
-                "noise": "노이즈",
-                "binaryGlitch": "바이너리 글리치",
-                "rgbSplit": "RGB 분할",
-                "shaking": "흔들림"
+                "noise": {
+                    "name":"노이즈",
+                    "hint":"흔들림 효과 추가 체크"
                 },
+                "binaryGlitch": {
+                    "name":"바이너리 글리치",
+                    "hint":"텍스트가 깨지는 효과"
+                },
+                "rgbSplit": {
+                    "name":"RGB 분할",
+                    "hint":"텍스트가 RGB로 분열하는 효과"
+                },
+                "shaking": {
+                    "name":"흔들림",
+                    "hint":"텍스트가 흔들리는 효과"
+                }
+            },
             "moduleTitle": "채팅",
             "moduleDescription": "선택한 플레이어에게 서로 다른 채팅을 전송",
             "selectPlayerHint": "플레이어를 선택하면 개인 문자열 입력칸이 나타납니다.",

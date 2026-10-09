@@ -12,10 +12,11 @@ Hooks.once("init", async () => {
   
   const moduleInfo = await loadFile(MODULE_ROOT, "module", "json");
   // console.log(`id is ${moduleInfo}`);
-  for(const key of Object.keys(moduleInfo))
-  {
-    SharedData.moduleInfo.core[key] = moduleInfo[key];
-  }
+  buildObject(SharedData.moduleInfo.core, moduleInfo);
+  // for(const key of Object.keys(moduleInfo))
+  // {
+  //   SharedData.moduleInfo.core[key] = moduleInfo[key];
+  // }
   game.settings.register(SharedData.moduleInfo.core.id, "language", {
     name: SharedData.langBase.core.languageSettingName,
     hint: SharedData.langBase.core.languageSettingHint,
@@ -82,7 +83,8 @@ Hooks.once("init", async () => {
   
   globalThis.fvttIllusion = {
     sharedData: SharedData,
-    loadFile: loadFile
+    loadFile: loadFile,
+    buildObject: buildObject
   };
   Hooks.callAll("fvtt-illusion-core.lateinit");
 });
